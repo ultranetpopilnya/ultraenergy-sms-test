@@ -1,8 +1,7 @@
-const MANIFEST_URL = 'https://raw.githubusercontent.com/ultranetpopilnya/UltraEnergy-SMS-Tool/main/manifest.json';
-const DOWNLOAD_URL  = 'https://github.com/ultranetpopilnya/UltraEnergy-SMS-Tool/archive/refs/heads/main.zip';
-
-// ⏱ ЩО МІНЯТИ: інтервал перевірки (зараз 10 хвилин)
-const CHECK_INTERVAL_MS = 10 * 60 * 1000;
+// === УВАГА: Перевірте чи правильні посилання! ===
+// Зараз manifest береться з "ultraenergy-sms-test", а архів з "UltraEnergy-SMS-Tool"
+const MANIFEST_URL = 'https://raw.githubusercontent.com/ultranetpopilnya/ultraenergy-sms-test/refs/heads/main/manifest.json';
+const DOWNLOAD_URL = 'https://github.com/ultranetpopilnya/UltraEnergy-SMS-Tool/archive/refs/heads/main.zip';
 
 // Порівняння версій "1.2.3" > "1.1.0" → true
 function isNewerVersion(remote, current) {
@@ -18,31 +17,43 @@ function isNewerVersion(remote, current) {
     return false;
 }
 
+// Функція показу оновлення на вашій круглій кнопці
 function showUpdateBanner(newVersion) {
-    const block       = document.getElementById('versionBlock');
-    const updateInfo  = document.getElementById('updateInfo');
-    const versionSpan = document.getElementById('updateBannerVersion');
-    const link        = document.getElementById('updateDownloadLink');
+    const vBtn = document.getElementById('versionBtn');
+    const updateText = document.getElementById('updateText');
+    const bannerVersion = document.getElementById('updateBannerVersion');
 
-    if (!block) return;
-    if (versionSpan) versionSpan.textContent = newVersion;
-    if (link)        link.href = DOWNLOAD_URL;
+    if (!vBtn) return;
 
-    block.classList.add('has-update');
-    if (updateInfo) updateInfo.style.display = 'block';
+    if (bannerVersion) bannerVersion.textContent = newVersion;
 
+    // Вмикаємо неонову кнопку (як під час тесту "up" в popup.js)
+    vBtn.classList.add('has-update');
+    vBtn.title = "Завантажити оновлення!";
+    vBtn.href = DOWNLOAD_URL;
+    vBtn.target = "_blank"; 
+
+    if (updateText) updateText.style.display = 'flex';
+
+    // Зберігаємо інфу та вішаємо бейдж на іконку розширення
     chrome.storage.local.set({ pendingUpdate: newVersion });
     chrome.action.setBadgeText({ text: '1' });
     chrome.action.setBadgeBackgroundColor({ color: [129, 30, 113, 255] });
 }
 
-function hideUpdateBanner() {
-    const block      = document.getElementById('versionBlock');
-    const updateInfo = document.getElementById('updateInfo');
+// Приховуємо оновлення, якщо версія вже актуальна
+function hideUpdateBanner(currentVersion) {
+    const vBtn = document.getElementById('versionBtn');
+    const updateText = document.getElementById('updateText');
 
-    if (!block) return;
-    block.classList.remove('has-update');
-    if (updateInfo) updateInfo.style.display = 'none';
+    if (!vBtn) return;
+
+    vBtn.classList.remove('has-update');
+    vBtn.removeAttribute('href');
+    vBtn.removeAttribute('target');
+    vBtn.title = "Поточна версія: " + currentVersion;
+
+    if (updateText) updateText.style.display = 'none';
 
     chrome.storage.local.remove('pendingUpdate');
     chrome.action.setBadgeText({ text: '' });
@@ -61,59 +72,40 @@ async function checkForUpdate(currentVersion) {
             // Є нова версія — показуємо банер
             showUpdateBanner(remoteVersion);
         } else {
-            // Нової версії немає — чистимо storage і бейдж
-            chrome.storage.local.remove('pendingUpdate');
-            chrome.action.setBadgeText({ text: '' });
-
-            const banner = document.getElementById('updateBanner');
-            if (banner) hideUpdateBanner();
+            // Нової версії немає — чистимо
+            hideUpdateBanner(currentVersion);
         }
     } catch (e) {
         console.warn('[UltraEnergy] Перевірка оновлень не вдалась:', e);
     }
 }
 
-// Запустити перевірку і встановити інтервал
-function startUpdateChecker(currentVersion) {
-    checkForUpdate(currentVersion);
-    setInterval(() => checkForUpdate(currentVersion), CHECK_INTERVAL_MS);
-}
-
 document.addEventListener('DOMContentLoaded', () => {
-    const versionElement = document.getElementById('appVersion');
     let currentVersion = '0.0.0';
 
     if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.getManifest) {
         currentVersion = chrome.runtime.getManifest().version;
-        if (versionElement) versionElement.textContent = currentVersion;
 
-        // Відновлюємо бейдж і банер якщо оновлення вже було знайдено раніше
+        // Спочатку миттєво перевіряємо чи є збережене оновлення в пам'яті (щоб не чекати запиту до Github)
         chrome.storage.local.get('pendingUpdate', (data) => {
             if (data.pendingUpdate && isNewerVersion(data.pendingUpdate, currentVersion)) {
                 showUpdateBanner(data.pendingUpdate);
-                chrome.action.setBadgeText({ text: '1' });
-                chrome.action.setBadgeBackgroundColor({ color: [129, 30, 113, 255] });
             } else {
-                // Якщо користувач вже встановив нову версію — чистимо storage і бейдж
-                chrome.storage.local.remove('pendingUpdate');
-                chrome.action.setBadgeText({ text: '' });
+                hideUpdateBanner(currentVersion);
             }
         });
 
-        startUpdateChecker(currentVersion);
+        // Запускаємо перевірку актуальності ОДИН РАЗ при відкритті popup
+        checkForUpdate(currentVersion);
 
     } else {
-        // Локальне відкриття (подвійний клік по файлу)
+        // Локальне відкриття (подвійний клік по файлу) - чисто для тестування в браузері
         fetch('manifest.json')
             .then(r => r.json())
             .then(data => {
                 currentVersion = data.version;
-                if (versionElement) versionElement.textContent = currentVersion;
-                startUpdateChecker(currentVersion);
+                checkForUpdate(currentVersion);
             })
-            .catch(err => {
-                if (versionElement) versionElement.textContent = 'Помилка завантаження';
-                console.error('Не вдалося отримати версію:', err);
-            });
+            .catch(err => console.error('Не вдалося отримати версію:', err));
     }
 });
