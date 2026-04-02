@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <!-- ПІДКЛЮЧЕННЯ ШРИФТІВ GOOGLE -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+    --gradient: #fff3e5;        
+    --ultra-color: #811e71;
+    --energy-color: #00a700;       
+    --bg-color: #f9f8f6;
+    --text-color: #333;
+    --header-color: #444;
+    --subtitle-color: #696969;
+    --primary-accent-color: #007bff;
+    --success-color: #38c172;
+    --danger-color: rgb(191, 26, 26);
+    --input-bg-color: #fff;
+    --input-border-color: #ccc;
+    --input-focus-border-color: var(--primary-accent-color);
+    --warning-text: #e60000;
+    
+    /* Додані змінні для динамічної зміни */
+    --scrollbar-thumb: #c1c1c1;
+    --scrollbar-hover: #999;
+    --btn-disabled-bg: #e0e0e0;
+    --settings-card-bg: #fff;
+}
+
+        html { height: fit-content; }
+
+        body { 
+    width: 400px;
+    height: fit-content; 
+    max-height: 600px; /* Рекомендовано додати для popup */
+    overflow-y: auto; 
+    overflow-x: hidden; 
+    box-sizing: border-box; 
+    padding: 16px 16px 0px 16px;  
+    font-family: 'Inter', Arial, sans-serif; 
+    
+    /* Додаємо градієнт поверх основного кольору */
+    background-color: var(--bg-color); 
+    background-image: linear-gradient(to top, var(--gradient) 0%, transparent 15%);
+    background-attachment: fixed; /* Щоб градієнт не "тікав" при скролі */
+    
+    color: var(--text-color); 
+    margin: 0;
+    opacity: 0; 
+}
+        .sms-counter-bar {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 13px; 
+            color: var(--subtitle-color);
+            margin-top: 8px;
+            padding: 0 0px;
+            font-weight: 600;
+            white-space: nowrap; /* ВАЖЛИВО: Забороняє тексту переноситись на новий рядок */
+            overflow: hidden;    /* Ховає зайве, щоб не ламало вікно, якщо цифр буде мільйон */
+        }
+
+        /* Додаємо стабільність внутрішнім блокам */
+        .sms-counter-bar > div {
+            display: flex;
+            align-items: center;
+            white-space: nowrap;
+        }
+
+        .sms-counter-bar strong {
+            color: var(--text-color);
+            font-size: 13px;
+            margin: 0 2px; /* Трохи відступів біля цифр для краси */
+        }
+        
+        .sms-warning {
+            color: var(--warning-text) !important;
+        }
+
+        /* ДОДАНО: Клас, який плавно показує вікно після завантаження теми */
+        body.theme-loaded {
+            opacity: 1;
+            transition: opacity 0.15s ease-out;
+        } 
+
+        ::-webkit-scrollbar { width: 3px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background-color: var(--scrollbar-thumb); border-radius: 10px; }
+::-webkit-scrollbar-thumb:hover { background-color: var(--scrollbar-hover); }
+        
+.ultra-color { color: var(--ultra-color) !important; }
+.energy-color { color: var(--energy-color) !important; }
+
+        /* ШАПКА */
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; border-bottom: 1px solid var(--input-border-color); padding-bottom: 10px; min-height: 56px; }
+        .title-container { display: flex; flex-direction: column; justify-content: center; height: 100%; }
+        h3 { margin: 0; font-size: 17px; color: var(--header-color); font-weight: 700; }
+        .subtitle-text { font-size: 13px; color: var(--subtitle-color); margin-top: 2px; font-weight: 600; }
+        .warning-text { font-size: 13px; font-weight: 700; margin-top: 2px; display: none; color: var(--warning-text);}
+        
+        .header-icons { display: flex; gap: 15px; align-items: center; }
+        .icon-btn { background: none; border: none; font-size: 20px; cursor: pointer; padding: 0; color: #555; transition: 0.2s; }
+        .icon-btn:hover { color: var(--primary-accent-color); transform: scale(1.1); }
+        .icon-btn-danger:hover { color: var(--danger-color); }
+        
+        .info-btn #infoIcon,
+.info-btn #updateText .emoji-icon {
+    display: inline-block;      /* Потрібно для правильного вирівнювання */
+    vertical-align: middle;     /* Центрує їх по вертикалі один щодо одного */
+    line-height: 1;             /* Прибирає зайві відступи */
+    font-size: 20px;
+}
+
+        #mainView {
+    padding-bottom: 0px; /* Повертаємо повітря знизу для головного екрану */
+}
+
+        /* ІНПУТИ ТА ПОЛЯ */
+        label { 
+    font-weight: 600; 
+    font-size: 13px; 
+    /* ЗМІНЕНО: було 10px. 16px краще відділяє один блок від іншого */
+    margin-top: 16px; 
+    display: block; 
+    color: var(--text-color); 
+}
+
+/* Зробимо виняток для першого лейблу у вікні (після шапки), щоб він не відступав занадто сильно */
+.header + label {
+    margin-top: 8px;
+}
+    input, select, textarea { 
+    width: 100%; 
+    box-sizing: border-box; 
+    /* ЗМІНЕНО: було 4px. 6px дасть міліметр повітря між заголовком і полем */
+    margin-top: 5px; 
+    /* ЗМІНЕНО: було 8px. Тепер 10px зверху/знизу і 14px по боках. Текст не буде "тертися" об круглі кути */
+    padding: 9px 14px; 
+    background-color: var(--input-bg-color); 
+    border: 1px solid var(--input-border-color); 
+    border-radius: 12px; 
+    font-family: 'Inter', Arial, sans-serif; 
+    font-size: 13px; 
+    color: var(--text-color); 
+    transition: all 0.2s ease-in-out; 
+}
+        input:focus, select:focus, textarea:focus { border-color: var(--input-focus-border-color); outline: none; box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.15); }
+        textarea { height: 116px; resize: none; background-color: var(--input-bg-color); line-height: 1.4; }
+        select { cursor: pointer; }
+
+        /* КНОПКИ */
+        button.btn { width: 100%; height: 42px; padding: 0 10px; margin-top: 16px; background-color: var(--primary-accent-color); color: white; border: 1px solid transparent; border-radius: 9999px; cursor: pointer; font-weight: 600; font-size: 14px; font-family: 'Inter', Arial, sans-serif; transition: 0.2s ease-in-out; box-sizing: border-box; display: flex; align-items: center; justify-content: center; gap: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        button:disabled { background-color: var(--btn-disabled-bg) !important; color: var(--subtitle-color); cursor: not-allowed; box-shadow: none; }
+        
+        button.btn-success, button.btn-success:disabled { background-color: rgba(56, 193, 114, 0.15) !important; border: 1px solid var(--success-color) !important; color: #20874b !important; cursor: default !important; }
+        button.btn-error, button.btn-error:disabled { background-color: rgba(220, 53, 69, 0.15) !important; border: 1px solid var(--danger-color) !important; color: var(--danger-color); cursor: pointer !important; }
+        button.btn-loading, button.btn-loading:disabled { background-color: rgba(0, 123, 255, 0.15) !important; border: 1px solid var(--primary-accent-color) !important; color: #0056b3 !important; cursor: wait !important; }
+
+        /* НАЛАШТУВАННЯ ТА РОЗДІЛЮВАЧІ */
+        #settingsView { display: none; }
+        .network-title { margin: 16px 0 5px 0; font-size: 13px; padding-bottom: 2px; font-weight: 700; display: flex; align-items: center; gap: 2px; }
+        .energy-color { color: var(--success-color); }
+        .emoji-icon { font-weight: 400; font-family: "Segoe UI Emoji", "Apple Color Emoji", sans-serif; }
+        
+        .setting-subtitle { font-size: 13px; font-weight: 700; color: var(--header-color); margin-bottom: 10px; }
+
+
+
+        /* === ТАКТИЛЬНІ ВІДЧУТТЯ ДЛЯ КНОПОК === */
+        button.btn:active, .icon-btn:active { 
+            transform: scale(0.96) !important; 
+            transition: transform 0.05s ease-out; 
+        }
+
+        [data-theme="dark"] {
+    --gradient: #8f18ff1e; 
+    --ultra-color: #994a8c;
+    --energy-color: #81ca42;
+    --bg-color: #1a1a1a;
+    --text-color: #e0e0e0;
+    --header-color: #ffffff;
+    --subtitle-color: #8f8f8f;
+    --primary-accent-color: #3b82f6; 
+    --input-bg-color: #2d2d2d;
+    --input-border-color: #444;
+    --danger-color: rgb(235, 151, 25);
+    --warning-text: #ff9100;
+    
+    --scrollbar-thumb: #555;
+    --scrollbar-hover: #777;
+    --btn-disabled-bg: #333;
+    --settings-card-bg: #2d2d2d;
+}
+
+/* Коригування тексту кнопок та підказок для темної теми */
+[data-theme="dark"] button.btn-success, [data-theme="dark"] button.btn-success:disabled { color: #4ade80 !important; }
+[data-theme="dark"] button.btn-error, [data-theme="dark"] button.btn-error:disabled { color: #f87171 !important; }
+[data-theme="dark"] button.btn-loading, [data-theme="dark"] button.btn-loading:disabled { color: #60a5fa !important; }
+[data-theme="dark"] .icon-btn { color: #aaa; }
+
+/* === ВИПРАВЛЕННЯ ВИПАДАЮЧИХ СПИСКІВ ДЛЯ ТЕМНОЇ ТЕМИ === */
+[data-theme="dark"] #phoneSelector {
+    /* Робимо фон темно-синім (під колір акценту темної теми) */
+    background-color: rgba(59, 130, 246, 0.15); 
+    border-color: var(--primary-accent-color);
+    /* Робимо текст трохи світлішим, щоб гарно читався */
+    color: #93c5fd; 
+}
+
+[data-theme="dark"] select option {
+    /* Примусово фарбуємо самі "плашки" списку, що випадає, у темний колір */
+    background-color: var(--input-bg-color); 
+    color: var(--text-color);
+}
+
+[data-theme="dark"] select:focus option:checked {
+    /* Колір обраного елемента у списку (щоб не був стандартним синім) */
+    background: var(--primary-accent-color) linear-gradient(0deg, var(--primary-accent-color) 0%, var(--primary-accent-color) 100%);
+    color: #fff;
+}
+
+        /* === ГОРИЗОНТАЛЬНА АНІМАЦІЯ ПЕРЕХОДІВ === */
+        @keyframes slideInRight {
+            0% { opacity: 0; transform: translateX(25px); }
+            100% { opacity: 1; transform: translateX(0); }
+        }
+
+        @keyframes slideInLeft {
+            0% { opacity: 0; transform: translateX(-25px); }
+            100% { opacity: 1; transform: translateX(0); }
+        }
+
+        /* М'яка поява при першому кліку на розширення */
+@keyframes popIn {
+    0% { opacity: 0; transform: scale(0.97) translateY(4px); }
+    100% { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+/* Класи, якими ми будемо керувати з JS */
+.anim-initial { animation: popIn 0.25s ease-out; }
+.anim-slide-right { animation: slideInRight 0.25s cubic-bezier(0.25, 0.8, 0.25, 1); }
+.anim-slide-left { animation: slideInLeft 0.25s cubic-bezier(0.25, 0.8, 0.25, 1); }
+
+/* Прибираємо стрілки для Chrome, Safari, Edge */
+#amount::-webkit-outer-spin-button,
+#amount::-webkit-inner-spin-button,
+#smsPriceInput::-webkit-outer-spin-button,
+#smsPriceInput::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* === СТИЛІ ДЛЯ ДОПОМІЖНОГО ВИПАДАЮЧОГО СПИСКУ НОМЕРІВ === */
+        .helper-select {
+            background-color: rgba(0, 123, 255, 0.05);
+            border: 1px dashed var(--primary-accent-color); /* Пунктирна рамка показує, що це інструмент, а не поле */
+            color: var(--primary-accent-color);
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .helper-select:focus {
+            border-style: solid;
+        }
+
+        [data-theme="dark"] .helper-select {
+            background-color: rgba(59, 130, 246, 0.1);
+            border-color: #3b82f6;
+            color: #93c5fd;
+        }
+
+        /* === ПОКРАЩЕННЯ ЗОВНІШНЬОГО ВИГЛЯДУ SELECT === */
+select {
+    /* Прибираємо стандартну системну стрілку */
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    
+    /* Додаємо власну сучасну стрілку (SVG) */
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23333333' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    background-size: 14px;
+    
+    /* Робимо відступ справа, щоб текст не налізав на стрілку */
+    padding-right: 32px;
+}
+
+/* Світла стрілка для темної теми */
+[data-theme="dark"] select {
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23e0e0e0' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+}
+
+/* Вирівняли відступи лінії (було 17, стало 16 - для ідеальної сітки) */
+.setting-divider { 
+    border: none; 
+    border-top: 1px solid var(--input-border-color); 
+    margin: 16px 0; 
+}
+
+/* ========================================= */
+/* === УНІВЕРСАЛЬНИЙ ФУТЕР З ГРАДІЄНТОМ ==== */
+/* ========================================= */
+.sticky-footer {
+    position: sticky;
+    bottom: 0px; 
+    display: flex;
+    justify-content: center;
+    padding-top: 32px; 
+    padding-bottom: 16px; 
+    margin-top: -16px; 
+    margin-left: -16px;
+    margin-right: -16px;
+    margin-bottom: 0px;
+    z-index: 90;
+    pointer-events: none;
+}
+
+/* Стандартна кнопка в футері (наприклад, кнопка "Зберегти" в налаштуваннях) */
+.sticky-footer .btn {
+    width: 280px !important;
+    margin: 0 !important;
+    border-radius: 9999px !important; 
+    pointer-events: auto;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15); 
+}
+
+[data-theme="dark"] .sticky-footer .btn {
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5);
+}
+
+/* ========================================= */
+/* === РЯДОК: ВІДПРАВИТИ + КНОПКА ІНФО ===== */
+/* ========================================= */
+.footer-action-row {
+    display: flex;
+    gap: 7px; /* Відстань між кнопками */
+    align-items: center;
+    pointer-events: auto; /* Дозволяє клікати */
+}
+
+/* Робимо саме кнопку "Відправити" трохи вужчою, щоб вліз кружок */
+.sticky-footer .footer-action-row .btn {
+    width: 270px !important; 
+}
+
+/* Кругла кнопка "ІНФО" */
+.info-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 42px;
+    height: 42px;
+    border-radius: 9999px;
+    background-color: var(--input-bg-color);
+    border: 1px solid var(--input-border-color);
+    color: var(--subtitle-color);
+    text-decoration: none;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    box-sizing: border-box;
+    overflow: hidden;
+    white-space: nowrap;
+}
+
+.info-btn:hover {
+    border-color: var(--primary-accent-color);
+    color: var(--primary-accent-color);
+    transform: scale(0.96);
+}
+
+[data-theme="dark"] .info-btn {
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5);
+}
+
+/* === СТАН "Є ОНОВЛЕННЯ" (Розширена кнопка) === */
+.info-btn.has-update {
+    width: 105px; /* Кнопка розтягується */
+    padding: 0 12px;
+    background-color: var(--energy-color);
+    border-color: var(--energy-color);
+    color: #fff;
+    animation: pulseNeon 1.5s infinite alternate ease-in-out; /* Вмикаємо неон */
+}
+
+.info-btn.has-update:hover {
+    opacity: 0.9;
+    color: #fff;
+}
+
+.info-btn.has-update #infoIcon {
+    display: none; /* Ховаємо "і" */
+}
+
+.info-btn .update-text {
+    font-size: 14px;
+    font-weight: 700;
+    font-family: 'Inter', Arial, sans-serif;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+/* Неонове світіння для оновлення */
+:root { --neon-glow: rgba(0, 167, 0, 0.5); }
+[data-theme="dark"] { --neon-glow: rgba(129, 202, 66, 0.6); }
+
+@keyframes pulseNeon {
+    0% { box-shadow: 0 0 4px var(--neon-glow); }
+    100% { box-shadow: 0 0 16px var(--neon-glow); }
+}
+    </style>
+</head>
+<body data-theme="light">
+    <!-- ЕКРАН АВТОРИЗАЦІЇ -->
+    <div id="loginView" class="anim-initial" style="display: none; text-align: center;">
+        <div class="header" style="justify-content: center;">
+            <div class="title-container" style="align-items: center;">
+                <h3><span class="emoji-icon">🔒</span> Вхід в додаток</h3>
+                <div class="subtitle-text">Потрібна авторизація</div>
+            </div>
+        </div>
+        <label for="accessKey">Введіть ключ доступу:</label>
+        <input type="password" id="accessKey" placeholder="Ваш ключ..." style="text-align: center; font-size: 13px; margin-bottom: 10px;">
+        <button class="btn" id="loginBtn">Увійти</button>
+    </div>
+
+    <!-- ЕКРАН ПЕРШОГО ЗАПУСКУ -->
+    <div id="onboardingView" style="display: none;">
+        <div class="header">
+            <div class="title-container">
+                <h3><span class="emoji-icon">🚀</span> Перший запуск</h3>
+                <div class="subtitle-text">Налаштування TurboSMS</div>
+            </div>
+        </div>
+        <div class="network-title ultra-color"><span class="emoji-icon">🟣</span> Ultranet</div>
+        <input type="password" id="onboardUltraToken" placeholder="Введіть токен Ultranet...">
+
+        <div class="network-title energy-color"><span class="emoji-icon">🟢</span> ISP Energy</div>
+        <input type="password" id="onboardEnergyToken" placeholder="Введіть токен ISP Energy...">
+
+        <button class="btn" id="onboardSaveBtn">Зберегти та почати</button>
+    </div>
+
+    <!-- ОСНОВНИЙ ЕКРАН -->
+    <div id="mainView" class="anim-initial" style="display: none;">
+        <div class="header">
+            <div class="title-container">
+                <h3 id="mainTitle">UltraEnergy SMS Tool</h3>
+                <div id="subTitle"></div>
+            </div>
+            
+            <div class="header-icons">
+                <button class="icon-btn" id="devReloadBtn" title="Перезавантажити розширення" style="color: rgb(233, 165, 20);"><span class="emoji-icon">🔄</span></button>
+                <button class="icon-btn" id="pinBtn" title="Відкрити в боковій панелі"><span class="emoji-icon">📌</span></button>
+                <button class="icon-btn" id="openSettingsBtn" title="Налаштування"><span class="emoji-icon">⚙️</span></button>
+            </div>
+        </div>
+        
+        <label for="template">Шаблон:</label>
+        <select id="template"></select>
+
+        <!-- ================= ПОЧАТОК БЛОКУ ТЕЛЕФОНУ ================= -->
+        <label for="phone">Номер телефону:</label>
+        
+        <!-- Допоміжний список (з'явиться тільки якщо номерів > 1) -->
+        <div id="multiPhoneWrapper" style="display: none; margin-bottom: 8px;">
+            <div style="font-size: 13px; color: var(--primary-accent-color); font-weight: 600; margin-bottom: 4px; margin-top: 4px;">
+                <span class="emoji-icon">💡</span> Знайдено кілька номерів:
+            </div>
+            <select id="phoneSelector" class="helper-select"></select>
+        </div>
+
+        <!-- Основне поле вводу (завжди видиме і редаговане) -->
+        <input type="text" id="phone" placeholder="380...">
+        <!-- ================= КІНЕЦЬ БЛОКУ ТЕЛЕФОНУ ================= -->
+
+        <label for="amount">Сума до оплати (грн):</label>
+        <input type="number" id="amount" placeholder="Введіть суму...">
+        <label for="message">Згенероване SMS:</label>
+        <textarea id="message"></textarea>
+        <div class="sms-counter-bar">
+    <div><span class="emoji-icon">📝</span> Символів: <strong id="charCount">0</strong> (залишилось:&nbsp;<span id="charLeft">160</span>)</div>
+    <div id="smsStatusWrapper">
+        <span class="emoji-icon">📱</span> СМС: <strong class="">0</strong> шт
+        <span style="margin-left: 5px;">≈ <strong class="">0.00</strong> ₴</span>
+    </div>
+</div>
+
+        <div class="sticky-footer">
+            <div class="footer-action-row">
+                <button class="btn" id="sendBtn">Відправити SMS</button>
+                
+                <!-- Кругла кнопка версії/оновлення -->
+                <!-- ВИДАЛЕНО href="#" ТА target="_blank" -->
+                <a class="info-btn" id="versionBtn" title="Версія...">
+                    <span class="emoji-icon" id="infoIcon">ℹ️</span>
+                    <span class="update-text" id="updateText" style="display: none;">
+                        <span class="emoji-icon">🆕</span> <span id="updateBannerVersion"></span>
+                    </span>
+                </a>
+            </div>
+        </div>
+    </div> <!-- ОСЬ ЦЕЙ DIV ЗАКРИВАЄ mainView. ВІН ДУЖЕ ВАЖЛИВИЙ! -->
+
+    <div id="settingsView" style="display: none;">
+        
+        <!-- Шапка: Налаштування + риска розділення (вона вже вбудована в клас .header) -->
+        <div class="header">
+            <div class="title-container">
+                <h3><span class="emoji-icon">⚙️</span> Налаштування</h3>
+                <div class="subtitle-text">Керування розширенням</div>
+            </div>
+            <div class="header-icons">
+                <button class="icon-btn icon-btn-danger" id="closeSettingsIconBtn" title="Повернутись назад"><span class="emoji-icon">↩️</span></button>
+            </div>
+        </div>
+        
+        <!-- === ПЕРШИЙ БЛОК === -->
+        <div class="setting-subtitle">Налаштування API TurboSMS</div>
+        
+        <div class="network-title ultra-color" style="margin-top: 5px;"><span class="emoji-icon">🟣</span> Ultranet</div>
+        <input type="password" id="ultraToken" placeholder="Токен Ultranet...">
+        
+        <div class="network-title energy-color"><span class="emoji-icon">🟢</span> ISP Energy</div>
+        <input type="password" id="energyToken" placeholder="Токен ISP Energy...">
+        
+        <!-- === РИСКА РОЗДІЛЕННЯ === -->
+        <hr class="setting-divider">
+        
+        <div class="setting-subtitle">Тарифікація</div>
+        <label for="smsPriceInput">Вартість 1 SMS (грн) за вашим тарифом:</label>
+        <input type="number" id="smsPriceInput" step="0.01" min="0" value="1.29" placeholder="1.29">
+        <hr class="setting-divider">
+
+        <!-- === ДРУГИЙ БЛОК === -->
+        <div class="setting-subtitle">Зовнішній вигляд</div>
+        
+        <label for="themeSelector">Тема оформлення:</label>
+        <select id="themeSelector">
+            <option value="light">Світла тема</option>
+            <option value="dark">Темна тема</option>
+        </select>
+
+        <!-- === РИСКА РОЗДІЛЕННЯ === -->
+        <hr class="setting-divider">
+
+        <div class="setting-subtitle">Поведінка вікна</div>
+
+        <div style="display: flex; align-items: center; gap: 8px; padding: 10px; background-color: var(--settings-card-bg); border: 1px solid var(--input-border-color); border-radius: 12px;">
+            <input type="checkbox" id="autoCloseToggle" style="width: auto; margin: 0; cursor: pointer; accent-color: var(--primary-accent-color);">
+            <label for="autoCloseToggle" style="margin: 0; cursor: pointer; font-size: 13px; font-weight: 600;">Автоматично закривати після відправки</label>
+        </div>
+        
+        <!-- КНОПКА ЗБЕРЕГТИ (Змінено клас на універсальний) -->
+        <div class="sticky-footer">
+            <button class="btn" id="saveSettingsBtn">Зберегти налаштування</button>
+        </div>
+    </div> <!-- Закриття settingsView -->
+
+    <script src="popup.js"></script>
+    <script src="version.js"></script>
+</body>
+</html>

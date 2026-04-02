@@ -1,0 +1,42 @@
+{
+  "manifest_version": 3,
+  "name": "UltraEnergy SMS Tool",
+  "version": "2.1.23",
+  "description": "Відправка SMS абонентам Ultranet та ISP Energy",
+  "permissions": [
+    "activeTab",
+    "scripting",
+    "storage",
+    "sidePanel"
+  ],
+  "host_permissions": [
+    "https://bill.ultranetgroup.com.ua/*",
+    "https://bill.ispenergy.com.ua/*",
+    "https://api.turbosms.ua/*"
+  ],
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com;"
+  },
+  "icons": {
+    "16": "icon.png",
+    "32": "icon.png",
+    "48": "icon.png",
+    "128": "icon.png"
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "side_panel": {
+    "default_path": "popup.html?panel=1"
+  },
+  "action": {
+    "default_title": "UltraEnergy SMS Tool",
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icon.png",
+      "32": "icon.png",
+      "48": "icon.png",
+      "128": "icon.png"
+    }
+  }
+}

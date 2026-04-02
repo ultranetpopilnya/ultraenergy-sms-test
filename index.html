@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Інструкція до розширення UltraEnergy SMS Tool</title>
+    <link rel="icon" href="icon.png" type="image/png">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #0078d4;
+            --bg: #f3f2f1;
+            --card-bg: #ffffff;
+            --text: #201f1e;
+            --sidebar-bg: rgba(255, 255, 255, 0.8);
+            --radius: 12px;
+        }
+
+        html {
+            scroll-behavior: smooth;
+            scroll-padding-top: 40px;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            display: flex;
+        }
+
+        /* Sidebar */
+        aside {
+            width: 260px;
+            height: 100vh;
+            position: fixed;
+            background: var(--sidebar-bg);
+            backdrop-filter: blur(15px);
+            border-right: 1px solid rgba(0,0,0,0.1);
+            padding: 2rem 1rem;
+            z-index: 100;
+        }
+
+        nav a {
+            text-decoration: none;
+            color: #5d5d5d;
+            display: block;
+            padding: 0.8rem;
+            border-radius: 8px;
+            transition: 0.3s;
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+
+        nav a.active {
+            background: var(--primary);
+            color: white;
+            box-shadow: 0 4px 10px rgba(0,120,212,0.3);
+        }
+
+        /* Контент */
+        main {
+            margin-left: 260px;
+            flex-grow: 1;
+            padding: 40px 8%;
+            max-width: 1500px;
+        }
+
+        .step-card {
+            background: var(--card-bg);
+            border-radius: var(--radius);
+            padding: 30px;
+            margin-bottom: 60px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.6s ease-out;
+            position: relative;
+        }
+
+        .step-card.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        h3 {
+            margin-bottom: 10px;
+            color: var(--primary);
+        }
+
+        p {
+            color: #555;
+            margin-bottom: 15px;
+            font-size: 0.95rem;
+        }
+
+        /* ГАЛЕРЕЯ ЗОБРАЖЕНЬ */
+        .image-gallery {
+            display: flex;
+            gap: 20px;
+            overflow-x: auto;
+            scroll-snap-type: x mandatory;
+            padding-bottom: 15px;
+            margin-top: 20px;
+            scrollbar-width: thin;
+            scrollbar-color: var(--primary) #e1e1e1;
+            /* Ховаємо скролбар для плавності, але залишаємо функціонал */
+            -ms-overflow-style: none;
+        }
+
+        .image-gallery::-webkit-scrollbar { height: 8px; }
+        .image-gallery::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 10px; }
+        .image-gallery::-webkit-scrollbar-thumb {
+            background: #c1c1c1;
+            border-radius: 10px;
+        }
+        .image-gallery::-webkit-scrollbar-thumb:hover { background: var(--primary); }
+
+        .gallery-item {
+            flex: 0 0 100%;
+            scroll-snap-align: center;
+            aspect-ratio: 16/9; /* Зберігаємо пропорції слайдера */
+            background: #ffffff; /* Фон під картинкою */
+            border-radius: 10px;
+            overflow: hidden; /* Щоб збільшена картинка не вилазила за краї */
+            border: 1px solid #eee;
+            display: flex;
+            flex-direction: column; /* ГОЛОВНА ЗМІНА: ставимо елементи один під одним */
+        }
+
+        .gallery-item img {
+            width: 100%;
+            flex-grow: 1;
+            min-height: 0;
+            object-fit: contain; 
+            cursor: zoom-in; /* Курсор "лупа з плюсом" за замовчуванням */
+        }
+
+        .img-caption {
+            /* Прибрали position: absolute, тепер це звичайний блок знизу */
+            background: #201f1e; /* Темний солідний фон замість прозорого */
+            color: white;
+            width: 100%;
+            padding: 12px 15px;
+            font-size: 0.9rem;
+            flex-shrink: 0; /* Забороняємо звужувати блок з текстом */
+            position: relative; 
+            z-index: 10; /* Напис завжди буде ПОВЕРХ збільшеної картинки */
+            text-align: left; /* Текст по центру (за бажанням можете прибрати) */
+        }
+
+        /* КАртка ЗАВАНТАЖЕННЯ */
+        .download-card {
+            border-left: 5px solid var(--primary);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+
+        .download-info h2 {
+            font-size: 1.5rem;
+            color: var(--text);
+            margin-bottom: 5px;
+        }
+
+        .download-info p {
+            margin-bottom: 0;
+            color: #666;
+        }
+
+        .download-action {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .version-badge {
+            background: #e1f0fe;
+            color: var(--primary);
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            border: 1px solid rgba(0,120,212,0.2);
+        }
+
+        .download-btn {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: var(--primary);
+            color: white;
+            text-decoration: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 10px rgba(0,120,212,0.3);
+        }
+
+        .download-btn:hover {
+            background: #005a9e;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(0,120,212,0.4);
+        }
+
+        .download-btn svg {
+            width: 20px;
+            height: 20px;
+        }
+
+        @media (max-width: 768px) {
+            aside { display: none; }
+            main { margin-left: 0; padding: 20px 5%; }
+        }
+    </style>
+</head>
+<body>
+
+    <aside>
+        <h2 style="margin-bottom: 20px; font-size: 1.2rem;">Інструкція до розширення UltraEnergy SMS Tool</h2>
+        <nav id="toc">
+            <a href="#step1" class="active">1. Встановлення</a>
+            <a href="#step2">2. Вхід</a>
+            <a href="#step3">3. Як користуватись</a>
+        </nav>
+    </aside>
+
+    <main>
+        <!-- Картка завантаження -->
+        <section class="step-card download-card visible">
+            <div class="download-info">
+                <h2>UltraEnergy SMS Tool</h2>
+                <p>Розширення для швидкої відправки смс-повідомлення абонентам після підключення.</p>
+            </div>
+            
+            <div class="download-action">
+    <a href="https://github.com/ultranetpopilnya/UltraEnergy-SMS-Tool/archive/refs/heads/main.zip" class="download-btn" target="_blank">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="7 10 12 15 17 10"></polyline>
+            <line x1="12" y1="15" x2="12" y2="3"></line>
+        </svg>
+        Завантажити
+    </a>
+
+    <span class="version-badge">Версія: <strong id="appVersion"></strong></span>
+</div>
+        </section>
+
+        <section id="step1" class="step-card">
+            <h3>1. Встановлення в браузер.</h3>
+            <p></p>
+            
+            <div class="image-gallery">
+                <div class="gallery-item">
+                    <img src="imgs/1.jpg" alt="Screen 1">
+                    <div class="img-caption">1. Завантажте zip архів та розпакуйте папку з розширенням на ваш ПК.</div>
+                </div>
+                
+                <div class="gallery-item">
+                    <img src="imgs/2.jpg" alt="Screen 1">
+                    <div style="color: #ccc;"></div>
+                    <div class="img-caption">2. Відкрийте свій браузер, зайдіть в розширення та ввімкніть Режим розробника.</div>
+                </div>
+
+                <div class="gallery-item">
+                    <img src="imgs/3.jpg" alt="Screen 1">
+                    <div style="color: #ccc;"></div>
+                    <div class="img-caption">3. Потім натисніть «Завантажити розпаковане розширення» та виберіть САМУ папку, де воно знаходиться.</div>
+                </div>
+
+                <div class="gallery-item">
+                    <img src="imgs/4.jpg" alt="Screen 1">
+                    <div style="color: #ccc;"></div>
+                    <div class="img-caption">4. Натисніть на іконку Розширення та Закріпіть розширення в панелі для швидкого доступу.</div>
+                </div>
+            </div>
+        </section>
+
+        <section id="step2" class="step-card">
+            <h3>2. Вхід в розширення.</h3>
+            <p></p>
+            
+            <div class="image-gallery">
+                <div class="gallery-item">
+                    <img src="imgs/5.jpg" alt="Screen 1">
+                    <div style="color: #ccc;"></div>
+                    <div class="img-caption">1. Натисніть на іконку розширення та введіть ключ.</div>
+                </div>
+                <div class="gallery-item">
+                    <img src="imgs/6.jpg" alt="Screen 1">
+                    <div style="color: #ccc;"></div>
+                    <div class="img-caption">2. Зайдіть на сайт TurboSMS та оберіть розділ Налаштування API. </div>
+                </div>
+                <div class="gallery-item">
+                    <img src="imgs/7.jpg" alt="Screen 1">
+                    <div style="color: #ccc;"></div>
+                    <div class="img-caption">3. Скопіюйте ключ. УВАГА! Ключі для Ультранет та ISP Energy різні. Їх не можна плутати!!!</div>
+                </div>
+                <div class="gallery-item">
+                    <img src="imgs/8.jpg" alt="Screen 1">
+                    <div style="color: #ccc;"></div>
+                    <div class="img-caption">4. Введіть скопійовані API-ключі у відповідні поля і натисніть «Зберегти». Увага! Ключі мають бути різні. Будьте уважні з цим!</div>
+                </div>
+            </div>
+        </section>
+
+        <section id="step3" class="step-card">
+            <h3>3. Як користуватись.</h3>
+            <p></p>
+            
+            <div class="image-gallery">
+                <div class="gallery-item">
+                    <img src="imgs/9.jpg" alt="Screen 1">
+                    <div style="color: #ccc;"></div>
+                    <div class="img-caption">Відкрийте картку абонента та натисніть на іконку розширення. Виберіть шаблон та при необхідності вкажіть суму. (Розширення автоматично буде вставляти число кредиту, якщо він є). Номер телефону, договір та пароль буде внесено автоматично.</div>
+                </div>
+                <div class="gallery-item">
+                    <img src="imgs/10.jpg" alt="Screen 1">
+                    <div style="color: #ccc;"></div>
+                    <div class="img-caption">Щоб перевірити, як поводиться розширення при відправці смс, вкажіть замість номера телефону слово TEST. Повідомлення відправлено не буде.</div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        // 1. Анімація появи карток
+        const fadeObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                }
+            });
+        }, { threshold: 0.1 });
+
+        document.querySelectorAll('.step-card').forEach(card => fadeObserver.observe(card));
+
+
+        // 2. Новий, безбаговий скрипт для меню (Scroll Spy)
+        const navLinks = document.querySelectorAll('#toc a');
+        const spyObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    navLinks.forEach(link => {
+                        link.classList.remove('active');
+                        if (link.getAttribute('href') === `#${entry.target.id}`) {
+                            link.classList.add('active');
+                        }
+                    });
+                }
+            });
+        }, { rootMargin: '-30% 0px -60% 0px' }); // Тригер спрацьовує, коли картка ближче до верху екрану
+
+        document.querySelectorAll('section').forEach(sec => spyObserver.observe(sec));
+
+
+        // 3. Гібридний скрол: Коліщатко миші -> Горизонтальний скрол галереї
+        document.querySelectorAll('.image-gallery').forEach(gallery => {
+            let isScrolling = false;
+
+            gallery.addEventListener('wheel', (e) => {
+                // Перевіряємо, що користувач крутить саме вертикальне коліщатко миші
+                if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
+                    
+                    // Визначаємо крайні точки галереї (з урахуванням масштабу екрану)
+                    const maxScrollLeft = gallery.scrollWidth - gallery.clientWidth;
+                    const atLeft = Math.ceil(gallery.scrollLeft) <= 0;
+                    const atRight = Math.ceil(gallery.scrollLeft) >= maxScrollLeft - 1;
+
+                    // Чи є куди гортати в залежності від напрямку коліщатка?
+                    const canScrollRight = e.deltaY > 0 && !atRight;
+                    const canScrollLeft = e.deltaY < 0 && !atLeft;
+
+                    // Якщо є куди гортати картинки:
+                    if (canScrollRight || canScrollLeft) {
+                        e.preventDefault(); // Зупиняємо рух самої сторінки вниз/вгору
+
+                        if (!isScrolling) {
+                            isScrolling = true;
+                            
+                            // Гортаємо рівно на ширину одного блоку з картинкою
+                            const direction = e.deltaY > 0 ? 1 : -1;
+                            gallery.scrollBy({ 
+                                left: gallery.clientWidth * direction, 
+                                behavior: 'smooth' 
+                            });
+
+                            // Робимо паузу для коліщатка, поки йде плавна анімація, 
+                            // щоб слайди не перелітали по 2-3 штуки за раз
+                            setTimeout(() => {
+                                isScrolling = false;
+                            }, 400); 
+                        }
+                    }
+                    // Якщо галерея дійшла до кінця (або початку) — блокування знімається 
+                    // і сторінка плавно продовжує скролитись вниз/вгору.
+                }
+            }, { passive: false }); // Дозволяє використовувати e.preventDefault()
+        });
+
+        // 4. Лупа по кліку (Збільшення 2x та переміщення)
+        document.querySelectorAll('.gallery-item img').forEach(img => {
+            let isZoomed = false; // Змінна, яка пам'ятає стан картинки (збільшена чи ні)
+
+            // Функція для обчислення позиції курсора і зсуву картинки
+            const updateZoomPosition = (e) => {
+                const rect = img.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                
+                const xPercent = (x / rect.width) * 100;
+                const yPercent = (y / rect.height) * 100;
+                
+                img.style.transformOrigin = `${xPercent}% ${yPercent}%`;
+            };
+
+            // Головна подія: КЛІК по картинці
+            img.addEventListener('click', (e) => {
+                isZoomed = !isZoomed; // Перемикаємо стан (вкл/викл)
+
+                if (isZoomed) {
+                    // ВКЛЮЧАЄМО ЗУМ
+                    img.style.transition = 'transform 0.3s ease-out'; // Плавно збільшуємо
+                    updateZoomPosition(e); // Фокусуємось туди, куди клікнули
+                    img.style.transform = 'scale(2)'; // Збільшення рівно 2x
+                    img.style.cursor = 'zoom-out'; // Міняємо курсор на "лупу з мінусом"
+
+                    // Через 300мс (коли закінчиться анімація збільшення), 
+                    // вимикаємо плавність, щоб картинка миттєво їздила за мишкою
+                    setTimeout(() => {
+                        if (isZoomed) img.style.transition = 'none';
+                    }, 300);
+
+                } else {
+                    // ВИМИКАЄМО ЗУМ
+                    img.style.transition = 'transform 0.3s ease-out'; // Плавно зменшуємо
+                    img.style.transform = 'scale(1)'; // Повертаємо до нормального розміру
+                    img.style.cursor = 'zoom-in'; // Повертаємо курсор "лупа з плюсом"
+                }
+            });
+
+            // Подія: Рух мишкою
+            img.addEventListener('mousemove', (e) => {
+                // Картинка їздить за курсором ТІЛЬКИ якщо вона зараз збільшена
+                if (isZoomed) {
+                    updateZoomPosition(e);
+                }
+            });
+
+            // Подія: Курсор пішов з картинки
+            img.addEventListener('mouseleave', () => {
+                // Якщо картинка була збільшена, а мишка покинула її зону - автоматично скидаємо зум
+                if (isZoomed) {
+                    isZoomed = false;
+                    img.style.transition = 'transform 0.3s ease-out';
+                    img.style.transform = 'scale(1)';
+                    img.style.cursor = 'zoom-in';
+                }
+            });
+        });
+    </script>
+    <script src="version.js"></script>
+</body>
+</html>
